@@ -19,11 +19,9 @@ def run(
     output: str = typer.Option(..., "--output", help="Path to output (.mp3 or .mp4)"),
     voice: str = typer.Option("alloy", "--voice", help="ElevenLabs voice name or ID"),
     language: Optional[str] = typer.Option(None, "--language", help="ISO 639-1 target/output language (transcript & TTS). Input language auto-detected."),
-    transcriber: str = typer.Option("openai", "--transcriber", help="Transcriber provider: openai"),
-    tts: str = typer.Option("elevenlabs", "--tts", help="TTS provider: openai|elevenlabs"),
 ):
     """Run end-to-end dubbing: transcribe and generate dubbed output."""
-    cfg = DubbifyConfig(voice=voice, language=language, transcriber=transcriber, tts_provider=tts)  # type: ignore[arg-type]
+    cfg = DubbifyConfig(voice=voice, language=language)
     dubbify = Dubbify(config=cfg)
     with Progress() as progress:
         t1 = progress.add_task("Transcribing", total=None)
@@ -59,10 +57,9 @@ def transcribe(
     input: str = typer.Option(..., "--input", help="Path to input media"),
     output: str = typer.Option(..., "--output", help="Path to save .srt file"),
     language: Optional[str] = typer.Option(None, "--language", help="ISO 639-1 target/output language (transcript). Input language auto-detected."),
-    transcriber: str = typer.Option("openai", "--transcriber", help="Transcriber provider: openai"),
 ):
     """Transcribe media to SRT subtitle file."""
-    cfg = DubbifyConfig(language=language, transcriber=transcriber)  # type: ignore[arg-type]
+    cfg = DubbifyConfig(language=language)
     dubbify = Dubbify(config=cfg)
     srt_content = dubbify.transcriber.transcribe(input)
     Path(output).write_text(srt_content, encoding="utf-8")
@@ -73,11 +70,10 @@ def transcribe(
 def dub(
     input: str = typer.Option(..., "--input", help="Path to input .srt file"),
     output: str = typer.Option(..., "--output", help="Path to dubbed audio .mp3"),
-    voice: str = typer.Option("alloy", "--voice", help="Voice name or ID (provider-specific)"),
-    tts: str = typer.Option("elevenlabs", "--tts", help="TTS provider: openai|elevenlabs"),
+    voice: str = typer.Option("alloy", "--voice", help="ElevenLabs voice name or ID"),
 ):
     """Generate a dubbed audio track from an SRT file."""
-    cfg = DubbifyConfig(voice=voice, tts_provider=tts)
+    cfg = DubbifyConfig(voice=voice)
     dubbify = Dubbify(config=cfg)
     srt_content = Path(input).read_text(encoding="utf-8")
     final_track = dubbify.dubber.generate_dub_track(srt_content)
