@@ -13,11 +13,12 @@ pip install dubbify
 
 ## Configuration
 
-Set API keys as environment variables:
+Set API keys and default model as environment variables:
 
 ```bash
-export OPENAI_API_KEY="sk-..."
-export ELEVENLABS_API_KEY="your_elevenlabs_key"
+export OPENAI_API_KEY="sk-..."          # used for transcription only
+export ELEVENLABS_API_KEY="your_elevenlabs_key"  # used for TTS only
+export DUBBIFY_TTS_MODEL="eleven_v3"  # optional, defaults to v3
 ```
 
 ## CLI Usage
@@ -29,8 +30,7 @@ dubbify run \
   --input path/to/video.mp4 \
   --output path/to/dubbed_video.mp4 \
   --voice alloy \
-  --language en \
-  --transcriber openai
+  --language en
 ```
 
 - Transcribe only:
@@ -39,8 +39,7 @@ dubbify run \
 dubbify transcribe \
   --input path/to/video.mp4 \
   --output path/to/transcript.srt \
-  --language en \
-  --transcriber openai
+  --language en
 ```
 
 - Dub from SRT:
@@ -57,7 +56,7 @@ dubbify dub \
 ```python
 from dubbify import Dubbify, DubbifyConfig
 
-config = DubbifyConfig(voice="Bella", language="en", transcriber="openai")
+config = DubbifyConfig(voice="Bella", language="en")
 project = Dubbify(config=config)
 project.run(input_path="path/to/video.mp4", output_path="path/to/dubbed_video.mp4")
 ```

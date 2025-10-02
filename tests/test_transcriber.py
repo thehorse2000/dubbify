@@ -14,11 +14,10 @@ def test_transcriber_raises_without_api_key(tmp_path: Path, monkeypatch):
     # Ensure no OPENAI_API_KEY is present
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-    cfg = DubbifyConfig(transcriber="openai")
+    cfg = DubbifyConfig()
     t = Transcriber(cfg)
-    # Without API key, cloud path will raise when requiring key for text
     try:
-        t._transcribe_openai(str(audio_path))
+        t.transcribe(str(audio_path))
         assert False, "Expected an error due to missing OPENAI_API_KEY"
     except Exception as exc:
         assert "OPENAI_API_KEY" in str(exc)

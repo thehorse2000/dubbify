@@ -19,9 +19,6 @@ class Dubber:
         self._elevenlabs_generate = None
 
     def _ensure_elevenlabs(self):
-        # Only initialize if ElevenLabs is the active TTS provider
-        if self.config.tts_provider != "elevenlabs":
-            return
         # No-op if already initialized
         if self._elevenlabs_generate is not None or self._elevenlabs_client is not None:
             return
@@ -53,9 +50,8 @@ class Dubber:
         temp_dir = Path("tmp_dubbify_segments")
         temp_dir.mkdir(parents=True, exist_ok=True)
 
-        # Initialize provider-specific clients if needed
-        if self.config.tts_provider == "elevenlabs":
-            self._ensure_elevenlabs()
+        # Initialize ElevenLabs client if needed
+        self._ensure_elevenlabs()
 
         segment_paths: List[Path] = []
         for idx, sub in enumerate(subtitles):
@@ -95,9 +91,7 @@ class Dubber:
         return final_track
 
     def _synthesize_text(self, text: str) -> bytes:
-        if self.config.tts_provider == "openai":
-            return self._synthesize_text_openai(text)
-        # Default to ElevenLabs
+        # ElevenLabs-only
         voice = self.config.voice
         model = self.config.model
         # Prefer top-level `generate` if available
@@ -135,71 +129,4 @@ class Dubber:
             chunks.append(chunk if isinstance(chunk, bytes) else bytes(chunk))
         return b"".join(chunks)
 
-    def _synthesize_text_openai(self, text: str) -> bytes:
-        # Ensure API key is present
-        api_key = self.config.require_openai_key_for_tts()
-        # Lazy import to avoid hard dependency unless used
-        try:
-            from openai import OpenAI  # type: ignore
-        except Exception as exc:
-            raise RuntimeError("OpenAI SDK is not installed. Please install 'openai' package.") from exc
-
-        client = OpenAI(api_key=api_key)
-        model = self.config.openai_tts_model
-        voice = (self.config.voice or "alloy").strip().lower()
-        voice = self._validate_openai_voice(voice)
-        # Attempt non-streaming API first; if it fails, try streaming
-        try:
-            # Newer SDKs may support direct bytes via .audio.speech.create
-            response = client.audio.speech.create(
-                model=model,
-                voice=voice,
-                input=text,
-            )
-            # Try common access patterns for binary content
-            if hasattr(response, "content") and isinstance(response.content, (bytes, bytearray)):
-                return bytes(response.content)
-            # Some SDKs return a generator-like object with iter_bytes()
-            if hasattr(response, "iter_bytes"):
-                return b"".join(response.iter_bytes())  # type: ignore[attr-defined]
-        except Exception:
-            # Fallback to streaming response API pattern
-            try:
-                with client.audio.speech.with_streaming_response.create(
-                    model=model,
-                    voice=voice,
-                    input=text,
-                ) as stream:
-                    # Collect chunks into memory
-                    chunks: List[bytes] = []
-                    for chunk in stream.iter_bytes():  # type: ignore[attr-defined]
-                        chunks.append(chunk if isinstance(chunk, bytes) else bytes(chunk))
-                    return b"".join(chunks)
-            except Exception as exc:
-                raise RuntimeError("Failed to synthesize speech via OpenAI TTS. Check model name and SDK version.") from exc
-
-        # If none of the above paths returned, raise a helpful error
-        raise RuntimeError("Unsupported OpenAI SDK response format for TTS.")
-
-    def _validate_openai_voice(self, desired_voice: str) -> str:
-        """Validate the provided voice against the OpenAI-supported list.
-
-        Returns the voice if valid; otherwise raises a ValueError.
-        """
-        allowed = {
-            "nova",
-            "shimmer",
-            "echo",
-            "onyx",
-            "fable",
-            "alloy",
-            "ash",
-            "sage",
-            "coral",
-        }
-        if desired_voice in allowed:
-            return desired_voice
-        raise ValueError(
-            "Invalid OpenAI TTS voice. Use one of: nova, shimmer, echo, onyx, fable, alloy, ash, sage, coral"
-        )
 
