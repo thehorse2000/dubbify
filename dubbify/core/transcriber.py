@@ -24,68 +24,96 @@ class Transcriber:
         if input_path.suffix.lower() in {".mp4", ".mov", ".mkv"}:
             media_for_transcription = media_utils.extract_audio(str(input_path))
 
-        srt_text = self._transcribe_elevenlabs(media_for_transcription)
+        srt_text = self._transcribe_openai(media_for_transcription)
 
         return srt_text
 
-    def _transcribe_elevenlabs(self, audio_path: str) -> str:
+    def _transcribe_openai(self, audio_path: str) -> str:
         # Ensure API key present before any audio processing (keeps tests deterministic)
-        api_key = self.config.require_elevenlabs_key()
-        target_lang = (self.config.language or "").strip().lower() or None
+        _ = self.config.require_openai_key_for_text()
+        # Split audio into chunks under provider size limit and merge into one SRT
+        subtitles: List[srt_lib.Subtitle] = []
+        chunk_dir = Path("tmp_dubbify_transcribe")
+        chunk_dir.mkdir(parents=True, exist_ok=True)
 
-        # Attempt to use ElevenLabs SDK if available; otherwise fall back to HTTP
         try:
-            from elevenlabs.client import ElevenLabs  # type: ignore
-            client = ElevenLabs(api_key=api_key)
-            # Prefer SDK speech-to-text if exposed
-            if hasattr(client, "speech_to_text") and hasattr(client.speech_to_text, "convert"):
-                with open(audio_path, "rb") as f:
-                    result = client.speech_to_text.convert(file=f)  # type: ignore[arg-type]
-                data = result if isinstance(result, dict) else getattr(result, "to_dict", lambda: {} )()
-            else:
-                raise ImportError
-        except Exception:
-            # Fallback to HTTP API
-            import requests
-            url = "https://api.elevenlabs.io/v1/speech-to-text"
-            headers = {"xi-api-key": api_key}
-            files = {"file": (Path(audio_path).name, open(audio_path, "rb"), "application/octet-stream")}
-            data = {}
-            if target_lang:
-                data["language"] = target_lang
-            resp = requests.post(url, headers=headers, files=files, data=data, timeout=300)
-            resp.raise_for_status()
-            data = resp.json()
+            chunks = self._split_audio_into_chunks(audio_path, target_max_bytes=24 * 1024 * 1024)
+            running_index = 1
+            for chunk_path, offset_seconds in chunks:
+                chunk_subs = self._transcribe_openai_cloud_chunk(
+                    audio_path=str(chunk_path),
+                    offset_seconds=offset_seconds,
+                )
+                for sub in chunk_subs:
+                    sub.index = running_index
+                    running_index += 1
+                subtitles.extend(chunk_subs)
+        finally:
+            # Cleanup chunk files best-effort
+            try:
+                for p in chunk_dir.glob("*"):
+                    try:
+                        p.unlink()
+                    except Exception:
+                        pass
+                chunk_dir.rmdir()
+            except Exception:
+                pass
 
-        # Try to build subtitles from common STT response shapes
-        segments = data.get("segments") or data.get("words") or []
+        return srt_lib.compose(subtitles)
+
+    def _transcribe_openai_cloud_chunk(self, audio_path: str, offset_seconds: float) -> List[srt_lib.Subtitle]:
+        from typing import Any, Dict
+        from openai import OpenAI  # type: ignore
+
+        client = OpenAI(api_key=self.config.require_openai_key_for_text())
+        model_name = "whisper-1"
+
+        def to_dict(obj: Any) -> Dict[str, Any]:
+            if hasattr(obj, "to_dict"):
+                return obj.to_dict()  # type: ignore[no-any-return]
+            if isinstance(obj, dict):
+                return obj
+            return {k: getattr(obj, k) for k in dir(obj) if not k.startswith("_")}
+
+        with open(audio_path, "rb") as f:
+            result = client.audio.transcriptions.create(
+                model=model_name,
+                file=f,
+                response_format="verbose_json",
+            )
+
+        data = to_dict(result)
+        segments = data.get("segments") or data.get("text_segments") or []
         if not segments and data.get("text"):
-            return srt_lib.compose([
-                srt_lib.Subtitle(index=1, start=timedelta(seconds=0), end=timedelta(seconds=0), content=str(data.get("text") or ""))
-            ])
+            return [
+                srt_lib.Subtitle(
+                    index=1,
+                    start=timedelta(seconds=offset_seconds),
+                    end=timedelta(seconds=offset_seconds),
+                    content=str(data.get("text") or ""),
+                )
+            ]
 
         subtitles: List[srt_lib.Subtitle] = []
         for idx, seg in enumerate(segments, start=1):
-            # Support multiple key shapes
-            start_seconds = float(seg.get("start", seg.get("start_time", seg.get("timestamp", 0.0))))
-            end_seconds = float(seg.get("end", seg.get("end_time", start_seconds)))
-            content = (seg.get("text") or seg.get("word") or "").strip()
+            start_seconds = float(seg.get("start", 0.0))
+            end_seconds = float(seg.get("end", start_seconds))
+            content = (seg.get("text") or "").strip()
             if not content:
                 continue
             subtitles.append(
                 srt_lib.Subtitle(
                     index=idx,
-                    start=timedelta(seconds=max(0.0, start_seconds)),
-                    end=timedelta(seconds=max(start_seconds, end_seconds)),
+                    start=timedelta(seconds=max(0.0, start_seconds + offset_seconds)),
+                    end=timedelta(seconds=max(start_seconds, end_seconds) + offset_seconds),
                     content=content,
                 )
             )
 
-        return srt_lib.compose(subtitles)
+        return subtitles
 
-    # OpenAI-based transcription and translation removed; ElevenLabs only
-
-    # Chunked transcription helpers related to OpenAI removed
+    # Chunk splitting retained for provider upload limits
 
     def _split_audio_into_chunks(self, audio_path: str, target_max_bytes: int) -> List[Tuple[Path, float]]:
         """Split an audio file into chunks whose sizes are approximately under target_max_bytes.
@@ -133,5 +161,5 @@ class Transcriber:
 
         return chunks
 
-    # Translation via OpenAI removed; ElevenLabs-only pipeline
+    # Translation not implemented; output SRT is source language
 

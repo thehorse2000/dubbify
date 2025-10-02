@@ -13,10 +13,11 @@ pip install dubbify
 
 ## Configuration
 
-Set API key and default model as environment variables:
+Set API keys and default model as environment variables:
 
 ```bash
-export ELEVENLABS_API_KEY="your_elevenlabs_key"
+export OPENAI_API_KEY="sk-..."          # used for transcription only
+export ELEVENLABS_API_KEY="your_elevenlabs_key"  # used for TTS only
 export DUBBIFY_TTS_MODEL="eleven_v3"  # optional, defaults to v3
 ```
 

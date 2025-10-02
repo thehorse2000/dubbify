@@ -14,9 +14,20 @@ class DubbifyConfig(BaseModel):
         description="ElevenLabs API key (from environment)",
     )
 
+    api_key_openai: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.environ.get("OPENAI_API_KEY", "")),
+        description="OpenAI API key (from environment)",
+    )
+
     def require_elevenlabs_key(self) -> str:
         key = self.api_key_elevenlabs.get_secret_value()
         if not key:
             raise ValueError("ELEVENLABS_API_KEY is required for ElevenLabs features")
+        return key
+
+    def require_openai_key_for_text(self) -> str:
+        key = self.api_key_openai.get_secret_value()
+        if not key:
+            raise ValueError("OPENAI_API_KEY is required for OpenAI transcription features")
         return key
 
