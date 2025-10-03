@@ -180,7 +180,7 @@ voice: str = "alloy": Default voice ID.
 
 language: Optional[str] = None: Language for transcription.
 
-    model: str = "eleven_v3": ElevenLabs model.
+    model: str = "eleven_multilingual_v2": ElevenLabs model.
 
     api_key_openai: SecretStr: Fetched from env var.
     api_key_elevenlabs: SecretStr: Fetched from env var.

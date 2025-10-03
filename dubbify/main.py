@@ -18,10 +18,11 @@ def run(
     input: str = typer.Option(..., "--input", help="Path to input media (.mp4/.mov/.mp3/.wav)"),
     output: str = typer.Option(..., "--output", help="Path to output (.mp3 or .mp4)"),
     voice: str = typer.Option("alloy", "--voice", help="ElevenLabs voice name or ID"),
+    voice_id: Optional[str] = typer.Option(None, "--voice-id", help="Explicit ElevenLabs voice_id for Convert endpoint"),
     language: Optional[str] = typer.Option(None, "--language", help="ISO 639-1 target/output language (transcript & TTS). Input language auto-detected."),
 ):
     """Run end-to-end dubbing: transcribe and generate dubbed output."""
-    cfg = DubbifyConfig(voice=voice, language=language)
+    cfg = DubbifyConfig(voice=voice, voice_id=voice_id, language=language)
     dubbify = Dubbify(config=cfg)
     with Progress() as progress:
         t1 = progress.add_task("Transcribing", total=None)
@@ -71,9 +72,10 @@ def dub(
     input: str = typer.Option(..., "--input", help="Path to input .srt file"),
     output: str = typer.Option(..., "--output", help="Path to dubbed audio .mp3"),
     voice: str = typer.Option("alloy", "--voice", help="ElevenLabs voice name or ID"),
+    voice_id: Optional[str] = typer.Option(None, "--voice-id", help="Explicit ElevenLabs voice_id for Convert endpoint"),
 ):
     """Generate a dubbed audio track from an SRT file."""
-    cfg = DubbifyConfig(voice=voice)
+    cfg = DubbifyConfig(voice=voice, voice_id=voice_id)
     dubbify = Dubbify(config=cfg)
     srt_content = Path(input).read_text(encoding="utf-8")
     final_track = dubbify.dubber.generate_dub_track(srt_content)
