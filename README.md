@@ -2,8 +2,12 @@
 
 Create AI-generated dubbed audio tracks for media via CLI and SDK.
 
-**Author:** Amr Osama  
-**Repository:** https://github.com/thehorse2000/dubbify
+## Example
+#### EN
+https://github.com/thehorse2000/dubbify/blob/main/examples/input.mp4
+
+#### ES (Dubbed Version)
+https://github.com/thehorse2000/dubbify/blob/main/examples/output.mp4
 
 ## Installation
 
@@ -122,6 +126,10 @@ Environment requirements:
 - `OPENAI_API_KEY` is required for transcription/translation and timing refinement.
 - `ELEVENLABS_API_KEY` is required for TTS.
 - FFmpeg must be installed and available on PATH.
+
+## Known Limitations
+1. Dubbify doesn't handle Music and sound Effects correctly -- Needs some work.
+2. Dubbify doesn't recognize multiple speakers if there are any (it generates same voice for all speakers)
 
 ## License
 
