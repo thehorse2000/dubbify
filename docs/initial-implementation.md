@@ -51,7 +51,7 @@ This is the main command that performs the full end-to-end process.
 dubbify run \
     --input "path/to/my_video.mp4" \
     --output "path/to/dubbed_video.mp4" \
-    --voice "alloy" \
+    --voice "asDeXBMC8hUkhqqL7agO" \
     --language "en"
 
 --input: Path to the source video or audio file.
@@ -83,7 +83,7 @@ This command only performs the dubbing step, using a pre-existing SRT file.
 dubbify dub \
     --input "path/to/transcript.srt" \
     --output "path/to/dubbed_audio.mp3" \
-    --voice "alloy"
+    --voice "asDeXBMC8hUkhqqL7agO"
 
 --input: Path to the source .srt file.
 
@@ -176,7 +176,7 @@ rich: For beautiful formatting in the CLI output (e.g., progress bars, status me
 dubbify/models.py
 DubbifyConfig class (Pydantic model):
 
-voice: str = "alloy": Default voice ID.
+voice: str = "asDeXBMC8hUkhqqL7agO": Default voice ID.
 
 language: Optional[str] = None: Language for transcription.
 

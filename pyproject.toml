@@ -1,6 +1,6 @@
 [project]
 name = "dubbify"
-version = "0.1.0"
+version = "0.0.1"
 description = "Create AI-generated dubbed audio tracks for media via CLI and SDK"
 readme = "README.md"
 requires-python = ">=3.9"

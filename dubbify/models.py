@@ -5,10 +5,13 @@ import os
 
 
 class DubbifyConfig(BaseModel):
-    voice: str = Field(default="alloy", description="Default ElevenLabs voice name or ID")
+    voice: str = Field(default="asDeXBMC8hUkhqqL7agO", description="Default ElevenLabs voice name or ID")
     voice_id: Optional[str] = Field(default=None, description="Explicit ElevenLabs voice_id for Convert endpoint")
     language: Optional[str] = Field(default=None, description="ISO 639-1 target/output language for transcript and TTS (auto-detect input)")
-    model: str = Field(default="eleven_multilingual_v2", description="ElevenLabs TTS model name (v3)")
+    model: str = Field(
+        default_factory=lambda: os.environ.get("DUBBIFY_TTS_MODEL", "eleven_multilingual_v2"),
+        description="ElevenLabs TTS model name",
+    )
     use_convert_endpoint: bool = Field(default=True, description="Use ElevenLabs text_to_speech.convert (no timestamps)")
     openai_text_model: str = Field(
         default="gpt-5-mini",

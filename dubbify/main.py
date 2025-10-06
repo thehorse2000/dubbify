@@ -17,7 +17,7 @@ console = Console()
 def run(
     input: str = typer.Option(..., "--input", help="Path to input media (.mp4/.mov/.mp3/.wav)"),
     output: str = typer.Option(..., "--output", help="Path to output (.mp3 or .mp4)"),
-    voice: str = typer.Option("alloy", "--voice", help="ElevenLabs voice name or ID"),
+    voice: str = typer.Option("asDeXBMC8hUkhqqL7agO", "--voice", help="ElevenLabs voice name or ID"),
     voice_id: Optional[str] = typer.Option(None, "--voice-id", help="Explicit ElevenLabs voice_id for Convert endpoint"),
     language: Optional[str] = typer.Option(None, "--language", help="ISO 639-1 target/output language (transcript & TTS). Input language auto-detected."),
 ):
@@ -71,7 +71,7 @@ def transcribe(
 def dub(
     input: str = typer.Option(..., "--input", help="Path to input .srt file"),
     output: str = typer.Option(..., "--output", help="Path to dubbed audio .mp3"),
-    voice: str = typer.Option("alloy", "--voice", help="ElevenLabs voice name or ID"),
+    voice: str = typer.Option("asDeXBMC8hUkhqqL7agO", "--voice", help="ElevenLabs voice name or ID"),
     voice_id: Optional[str] = typer.Option(None, "--voice-id", help="Explicit ElevenLabs voice_id for Convert endpoint"),
 ):
     """Generate a dubbed audio track from an SRT file."""
